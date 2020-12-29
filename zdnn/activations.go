@@ -1,4 +1,4 @@
-package zmlp
+package zdnn
 
 import (
 	"gonum.org/v1/gonum/mat"
@@ -36,4 +36,18 @@ func ReLUPrime(num float64) float64 {
 		return 0.0
 	}
 	return 1.0
+}
+
+func ApplyReLUPrime(m mat.Matrix) mat.Matrix {
+	rows, _ := m.Dims()
+	o := make([]float64, rows)
+	for i := range o {
+		if o[i] < 0.0 {
+			o[i] = 0.0
+		} else {
+			o[i] = 1.0
+		}
+	}
+	d := mat.NewDense(rows, 1, o)
+	return d
 }

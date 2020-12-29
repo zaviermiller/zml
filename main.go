@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"log"
 	"time"
+	"sync"
 
 	u "github.com/zaviermiller/zml/utils"
-	"github.com/zaviermiller/zml/zmlp"
+	// "github.com/zaviermiller/zml/znn"
+	"github.com/zaviermiller/zml/zdnn"
 )
 func printData(dataSet *u.DataSet, index int) {
 	data := dataSet.Data[index]
@@ -19,13 +21,67 @@ func main() {
 		log.Fatal(err)
 	}
 
-	cfg := zmlp.NNConfig {
+	// set up basic neural net
+	
+	// cfg := znn.NNConfig {
+	// 	InputNeurons: dataSet.W * dataSet.H,
+	// 	OutputNeurons: 10,
+	// 	HiddenNeurons: 100,
+	// 	NumEpochs: 5,
+	// 	LearningRate: .1,
+	// }
+
+	// mlp := znn.NewNetwork(cfg)
+
+	// set up deep neural net
+	layercfg := zdnn.LayerConfig { Neurons: 100 }
+	layers := []*zdnn.NeuronLayer { zdnn.NewLayer(layercfg) }
+	dcfg := zdnn.NNConfig {
 		InputNeurons: dataSet.W * dataSet.H,
 		OutputNeurons: 10,
-		HiddenNeurons: 100,
+		HiddenLayers: layers,
 		NumEpochs: 5,
-		LearningRate: .3,
+		LearningRate: .1,
 	}
+
+	dnn := zdnn.NewNetwork(dcfg)
+
+
+	// format data
+	digitsData := make([][]float64, dataSet.N)
+	inputsData := [][]float64{}
+	for i, img := range dataSet.Data {
+		digArr := make([]float64, 10)
+		for i, _ := range digArr {
+			if (img.Digit) == i {
+				digArr[i] = 1.0
+				continue
+			}
+			digArr[i] = 0.0
+		}
+		digitsData[i] = digArr
+		tmp := []float64{}
+		for _, row := range img.Image {
+			for _, val := range row {
+				tmp = append(tmp, (float64(val) / 255.0 * 1.0))
+			}
+		}
+		inputsData = append(inputsData, tmp)
+	}
+
+	t1 := time.Now()
+	fmt.Println("Beginning to train...")
+
+	var wg sync.WaitGroup
+
+	for e := 0; e < dcfg.NumEpochs; e++ {
+		wg.Add(1)
+		go dnn.Train(inputsData, digitsData, dataSet.N, &wg)
+	}
+
+	wg.Wait()
+
+	fmt.Println(fmt.Sprintf("done in %s! testing...", time.Since(t1)))
 
 	testSet, err := u.ReadTestSet("mnist")
 	if err != nil {
@@ -38,7 +94,7 @@ func main() {
 		tmp := []float64 {}
 		for _, row := range img.Image {
 			for _, val := range row {
-				tmp = append(tmp, (float64(val) / 255.0 * 0.99) + 0.01)
+				tmp = append(tmp, (float64(val) / 255.0))
 			}
 		}
 		testData = append(testData, tmp)
@@ -46,7 +102,7 @@ func main() {
 
 	var acc int
 	for j, img := range testData {
-		outputs, err := mlp.Predict(img)
+		outputs, err := dnn.Predict(img)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -70,6 +126,6 @@ func main() {
 	fmt.Print("Accuracy: ")
 	fmt.Println(float64(acc) / float64(len(testData)))
 
-	mlp.Save()
+	// mlp.Save()
 	
 }

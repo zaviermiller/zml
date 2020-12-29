@@ -1,4 +1,4 @@
-package zmlp
+package znn
 
 import (
 	"gonum.org/v1/gonum/mat"
