@@ -16,7 +16,7 @@ func printData(dataSet *u.DataSet, index int) {
 	u.PrintImage(data.Image)	// print Image
 }
 func main() {
-	dataSet, err := u.ReadTrainSet("mnist")
+	dataSet, err := u.ReadTrainSet("data")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -83,7 +83,7 @@ func main() {
 
 	fmt.Println(fmt.Sprintf("done in %s! testing...", time.Since(t1)))
 
-	testSet, err := u.ReadTestSet("mnist")
+	testSet, err := u.ReadTestSet("data")
 	if err != nil {
 		log.Fatal(err)
 	}
